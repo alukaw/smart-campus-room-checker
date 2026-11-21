@@ -35,6 +35,12 @@ Smart Campus Room Availability Checker — a fictional, client-side demo built w
 - `npm run lint` — run ESLint.
 - `npm run build` — production build.
 
+## Permissions
+
+- Allowed commands: only the four commands in the Commands section, plus npm install when the human asks for it.
+- Edit only the files named in the task. Do not create or delete other files without approval.
+- AGENTS.md is not loaded automatically in Bolt, so every task prompt starts with: Read the root AGENTS.md first.
+
 ## Forbidden actions
 
 - Introducing real personal data.
@@ -44,6 +50,9 @@ Smart Campus Room Availability Checker — a fictional, client-side demo built w
 - Deleting or weakening existing tests.
 - Editing the fixtures in `src/data.ts`.
 - Unrelated refactoring.
+- Running destructive commands (for example rm -rf, deleting folders, clearing version history or force pushing).
+- Adding, removing or upgrading dependencies, or editing package.json or package-lock.json, without human approval.
+- Publishing or deploying the app. Only the human clicks Publish.
 
 ## Review gate
 
