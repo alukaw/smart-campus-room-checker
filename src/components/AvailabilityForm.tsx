@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import {
   Clock,
   CheckCircle2,
@@ -8,9 +9,11 @@ import {
   Wrench,
   X,
   MapPin,
+  Sparkles,
 } from 'lucide-react';
 import { Room } from '../types';
 import { AvailabilityResult, formatTime } from '../availability';
+import { explainAvailability } from '../explain';
 
 interface AvailabilityFormProps {
   attendeesStr: string;
@@ -51,6 +54,42 @@ export function AvailabilityForm({
   result,
   onSubmit,
 }: AvailabilityFormProps) {
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [explaining, setExplaining] = useState(false);
+  const explainedResultRef = useRef<AvailabilityResult | null>(null);
+
+  // A new result invalidates any explanation of an older one; late responses
+  // from an older result are ignored instead of overwriting the current state.
+  if (result !== explainedResultRef.current) {
+    explainedResultRef.current = result;
+    if (explanation !== null || explaining) {
+      setExplanation(null);
+      setExplaining(false);
+    }
+  }
+
+  async function handleExplain() {
+    if (!result) return;
+    const requestResult = result;
+    setExplaining(true);
+    setExplanation(null);
+    try {
+      const output = await explainAvailability({
+        roomLabel: selectedRoom ? selectedRoom.code : 'The selected room',
+        start: Number(startStr),
+        end: Number(endStr),
+        isAvailable: requestResult.available,
+        reasonCode: requestResult.reasonCode,
+      });
+      if (result !== requestResult) return; // result changed while explaining
+      setExplanation(output.explanation);
+    } catch {
+      if (result !== requestResult) return;
+      setExplanation('The confirmed status is shown above.');
+    } finally {
+      if (result === requestResult) setExplaining(false);
+    }
+  }
   return (
     <section className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
       <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -239,6 +278,36 @@ export function AvailabilityForm({
             </p>
             <p className="text-xs text-slate-600 mt-0.5">{result.reason}</p>
           </div>
+        </div>
+      )}
+
+      {/* Mock AI explanation — never affects the confirmed status above */}
+      {result && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={handleExplain}
+            disabled={explaining}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-400 hover:text-teal-700 transition disabled:opacity-50"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {explaining ? 'Explaining…' : 'Explain availability'}
+          </button>
+          {(explaining || explanation) && (
+            <div
+              aria-live="polite"
+              className="mt-2 rounded-lg bg-slate-50 border border-slate-200 p-3"
+            >
+              <p className="text-xs font-medium text-slate-500 mb-1">
+                AI-generated explanation (mock) — the confirmed status is shown above
+              </p>
+              {explaining ? (
+                <p className="text-xs text-slate-400">Preparing explanation…</p>
+              ) : (
+                <p className="text-xs text-slate-600">{explanation}</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </section>

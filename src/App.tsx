@@ -64,7 +64,7 @@ function App() {
   function handleSubmit() {
     const room = effectiveSelectedRoom;
     if (!room) {
-      setResult({ available: false, reason: 'Please select a room from the catalog.' });
+      setResult({ available: false, reason: 'Please select a room from the catalog.', reasonCode: 'NO_ROOM' });
       return;
     }
     const res = checkAvailability(room, startStr, endStr, currentTime, bookings);

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { checkAvailability } from './availability';
+import { ROOMS, INITIAL_BOOKINGS } from './data';
 import { Room, Booking } from './types';
 
 // ---------------------------------------------------------------------------
@@ -17,16 +18,6 @@ const ROOM_A101: Room = {
   blocked: false,
 };
 
-const ROOM_A102: Room = {
-  id: 'room-a102',
-  code: 'A102',
-  name: 'Seminar Room A2',
-  building: 'Engineering Block',
-  capacity: 30,
-  equipment: ['Whiteboard', 'TV Screen'],
-  blocked: false,
-};
-
 const ROOM_B201: Room = {
   id: 'room-b201',
   code: 'B201',
@@ -35,16 +26,6 @@ const ROOM_B201: Room = {
   capacity: 40,
   equipment: ['Computers', 'Projector', 'Whiteboard'],
   blocked: true,
-};
-
-const ROOM_C302: Room = {
-  id: 'room-c302',
-  code: 'C302',
-  name: 'Conference Room C3',
-  building: 'Central Wing',
-  capacity: 16,
-  equipment: ['Video Conferencing', 'Whiteboard', 'TV Screen'],
-  blocked: false,
 };
 
 const ROOM_EMPTY: Room = {
@@ -116,9 +97,7 @@ describe('checkAvailability', () => {
   // --- AC2: Reject booking longer than 120 minutes ---
 
   it('T09: booking of exactly 120 minutes is accepted (boundary, no overlap)', () => {
-    const result = checkAvailability(ROOM_A101, '660', '780', CURRENT_TIME, DEFAULT_BOOKINGS);
-    // 660–720 gap then 720–780 booking exists. 660–780 overlaps 720–780.
-    // Use empty room instead for clean 120-min boundary.
+    // Use empty room for clean 120-min boundary (A101 bookings would overlap).
     const result2 = checkAvailability(ROOM_EMPTY, '10', '130', 0, []);
     expect(result2.available).toBe(true);
   });
@@ -153,8 +132,7 @@ describe('checkAvailability', () => {
   });
 
   it('T15: touching at start endpoint is allowed (end == existing.start)', () => {
-    const result = checkAvailability(ROOM_A101, '540', '600', CURRENT_TIME, DEFAULT_BOOKINGS);
-    // 540 == currentTime → rejected by AC1. Use a different touch point.
+    // 540 == currentTime → rejected by AC1, so use a different touch point.
     const result2 = checkAvailability(ROOM_A101, '660', '720', CURRENT_TIME, DEFAULT_BOOKINGS);
     // 660 == first booking end (touching), 720 == second booking start (touching)
     expect(result2.available).toBe(true);
@@ -196,5 +174,31 @@ describe('checkAvailability', () => {
     const result = checkAvailability(ROOM_A101, '550', '750', CURRENT_TIME, DEFAULT_BOOKINGS);
     expect(result.available).toBe(false);
     expect(result.reason).toContain('120');
+  });
+
+  // --- Regression: scientific notation must be parsed as a full number (R1) ---
+
+  it("T21: start '6e2' (600) is parsed correctly, not truncated to 6", () => {
+    const result = checkAvailability(ROOM_EMPTY, '6e2', '660', 540, []);
+    expect(result.available).toBe(true);
+  });
+
+  // --- Regression: fractional times are rejected, not silently truncated (R1) ---
+
+  it("T22: start '600.5' is rejected as invalid numeric input", () => {
+    const result = checkAvailability(ROOM_EMPTY, '600.5', '660', 540, []);
+    expect(result.available).toBe(false);
+    expect(result.reason).toBe('Please enter valid numeric times.');
+  });
+
+  // --- AC5: fixtures in src/data.ts are never mutated by a check ---
+
+  it('T23: checkAvailability does not mutate ROOMS or INITIAL_BOOKINGS from src/data.ts', () => {
+    const roomsSnapshot = JSON.stringify(ROOMS);
+    const bookingsSnapshot = JSON.stringify(INITIAL_BOOKINGS);
+    checkAvailability(ROOMS[0], '660', '720', CURRENT_TIME, INITIAL_BOOKINGS);
+    checkAvailability(ROOMS[2], '660', '720', CURRENT_TIME, INITIAL_BOOKINGS);
+    expect(JSON.stringify(ROOMS)).toBe(roomsSnapshot);
+    expect(JSON.stringify(INITIAL_BOOKINGS)).toBe(bookingsSnapshot);
   });
 });
