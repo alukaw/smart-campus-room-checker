@@ -8,8 +8,8 @@
 |---|---|---|
 | Platform | Bolt.new project `sb1-55dv1cdr` (React 18 + TypeScript + Vite + Vitest) | Appsmith Cloud, free plan, app "Smart Campus A101 Low-code" |
 | Live demo | https://smart-campus-room-av-6yo1.bolt.host/#contract | https://app.appsmith.com/app/smart-campus-a101-low-code/page1-6b0548aab9542a02bf24e0db (see note in 10.3: must be switched to public) |
-| Source / export | https://github.com/alukaw/smart-campus-room-checker – commit `a620a43` | JS object `docs/practice12/lowcode/AvailabilityRules.js`, manifest `lowcode/WIDGETS.md`; full JSON via *Export application* |
-| AI tools | Bolt.new built-in agent (Standard mode, model not shown) | Claude Opus 5.5 (Anthropic) through Claude in Chrome – also used for the whole practice (see section 11) |
+| Source / export | https://github.com/alukaw/smart-campus-room-checker – code commit `a620a43`; report, contract and screenshots in `docs/practice12/` (commits `e5711fa`, `918e058`, `15a22c7`) | JS object `docs/practice12/lowcode/AvailabilityRules.js`, manifest `lowcode/WIDGETS.md`; full JSON via *Export application* |
+| AI tools | Bolt.new built-in agent (Standard mode, model not shown) | Claude Opus 5.5 (Anthropic) through Claude in Chrome – also used for the whole practice (see section 12) |
 
 No subscription was bought. All data is fictional.
 
@@ -66,7 +66,7 @@ The full sheet is in [`CONTRACT.md`](CONTRACT.md). It was written before any imp
 
 ## 3. Task 03 – Code-based solution (Bolt.new)
 
-**Prompt** (based on the suggested implementation prompt; full text in section 11): "Read the root AGENTS.md first and follow it. Act as a software engineering assistant. Implement the Smart Campus availability contract … Keep all six acceptance criteria unchanged. Use fictional data only. Separate deterministic booking rules from presentation. Explain limitations and provide tests. Do not invent successful test results." + the contract, the list of allowed files and "tests first".
+**Prompt** (based on the suggested implementation prompt; full text in section 12): "Read the root AGENTS.md first and follow it. Act as a software engineering assistant. Implement the Smart Campus availability contract … Keep all six acceptance criteria unchanged. Use fictional data only. Separate deterministic booking rules from presentation. Explain limitations and provide tests. Do not invent successful test results." + the contract, the list of allowed files and "tests first".
 
 **Result: Bolt Version 21 = commit `a620a43`** (5 files, +624/−3 lines):
 
@@ -78,11 +78,20 @@ The full sheet is in [`CONTRACT.md`](CONTRACT.md). It was written before any imp
 | Tests | `src/contract.test.ts` (16), `src/components/ContractChecker.test.tsx` (6) | T1–T8 by name + extra cases (malformed time, 23:30/60, exactly 120 min, ordered checks) and UI tests for T1, T3, T4 |
 | Wiring | `src/App.tsx` | two tabs "Room finder" (unchanged default) and "Single-room checker"; `#contract` opens the new tab |
 
-**Process evidence (agent report, then my own checks):** the agent first ran the new tests against no implementation (both files failed with "Failed to resolve import"), then implemented. It then had 2 failing UI tests (its own test mistakes) and 4 type errors, and fixed them itself. Final agent output: 80/80, type check and lint clean, build 2.04 s. I did **not** accept this on trust:
+**Process evidence (agent report, then my own checks):** the agent first ran the new tests against no implementation (both files failed with "Failed to resolve import"), then implemented. It then had 2 failing UI tests (its own test mistakes) and 4 type errors, and fixed them itself (Figure 4a). Final agent output: 80/80, type check and lint clean, build 2.04 s. I did **not** accept this on trust:
 
 - Bolt terminal, 13:32: `npx vitest run --reporter=verbose src/contract.test.ts` → 16/16 with T1–T8 listed by name (Figure 4); `npm test` → 6 files **80/80**, type check / lint / build exit 0 (Figure 5).
 - Independent clean clone of `a620a43` in a separate Linux workspace (Node v22.23.5, `npm ci`): 80/80, type check, lint, build exit 0 (built in 2.06 s).
 - I read the full diff. All 58 old tests passed without changes; `src/data.ts` and `package.json` were not touched.
+
+![Bolt agent summary](screenshots/cb-bolt-agent-summary.jpg)
+*Figure 4a. Bolt agent summary for Version 21: tests written first and shown failing, then implementation; the agent's own test and type errors are disclosed.*
+
+![Validation layer](screenshots/cb-code-validation.jpg)
+*Figure 4b. Code evidence – validation layer `validateContractInput()` in `src/contract.ts` (GitHub, commit `a620a43`).*
+
+![Calculation layer](screenshots/cb-code-calculation.jpg)
+*Figure 4c. Code evidence – calculation layer `checkContract()`: a copy of room A101 with the `blocked` flag, decision delegated to the existing `checkAvailability()`.*
 
 ![T1-T8 verbose](screenshots/cb-T1-T8-vitest-verbose.jpg)
 *Figure 4. Code-based contract tests T1–T8 (16/16) in the Bolt terminal.*
@@ -292,7 +301,10 @@ Next steps for the code-based version: remove `@supabase/supabase-js` after appr
 
 ### 10.1 Versions
 - Bolt: Version 20 (baseline) → **Version 21** "Implement and test contract checker", 24 Nov 2026 13:22; published 13:33.
-- GitHub: `93f4ef8` (baseline) → **`a620a43`** (code-based solution) → docs commit with this report.
+- GitHub: `93f4ef8` (baseline) → **`a620a43`** (code-based solution) → `e5711fa` (this report + shared contract) → `918e058` (Appsmith JS object + widget manifest) → `15a22c7` (34 screenshots) → this update (final report + 4 more screenshots) (Figure 35).
+
+![Commit history](screenshots/github-commit-history.jpg)
+*Figure 35. Public GitHub repository: baseline, code-based solution and the Practice 12 documentation commits.*
 - Appsmith: app "Smart Campus A101 Low-code", deployed 13:30, re-deployed after the layout fix 13:41.
 
 ### 10.2 Clearly labelled incomplete or simulated low-code behaviour
@@ -307,7 +319,26 @@ Appsmith apps are private by default. For the teacher to open the live demo with
 
 ---
 
-## 11. AI-use reflection
+## 11. Submission checklist
+
+| Required item (slide "Submission") | Where in this report / repository |
+|---|---|
+| Class time and day of the week | Header (to be filled in by the student) |
+| AI tool name, version, model | Header table and section 12: Bolt.new agent (Standard mode, model not shown); Claude Opus 5.5 via Claude in Chrome |
+| Project link (live demo via publish) and export | Header table: Bolt site `/#contract` (Figure 6); Appsmith deployed app (Figure 30); Bolt export = GitHub repo; Appsmith export = *Export application* JSON (section 6.3) |
+| GitHub public repository with all source code, report, screenshots | https://github.com/alukaw/smart-campus-room-checker – `src/` (code), `docs/practice12/` (report, contract, Appsmith source, 38 screenshots), Figure 35 |
+| Screenshots of both implementations and their test results | Figures 4–30 |
+| One shared requirement / acceptance-criteria sheet | Section 2 and [`CONTRACT.md`](CONTRACT.md) |
+| Eight-case test table with expected and observed outcomes | Section 5 |
+| Completed comparison matrix and brief recommendation | Sections 8 and 9 |
+| Security checklist | Section 7.1 (Figures 31–34) |
+| Short AI-use reflection | Section 12 |
+| Incomplete or simulated low-code behaviour clearly labelled | Section 4 (table) and 10.2 |
+| No OneDrive link, no WinRAR / ZIP | Everything is in the public GitHub repository as plain files |
+
+---
+
+## 12. AI-use reflection
 
 **Tools.** (1) **Bolt.new agent** (Standard mode; the model is not shown in Bolt) implemented the code-based contract from my prompt. (2) **Claude Opus 5.5** (Anthropic) through **Claude in Chrome** read the assignment, wrote the shared contract and the Bolt prompt, wrote the Appsmith JS object, configured the Appsmith widgets, ran every check and test, captured the screenshots and drafted this report. I approved the GitHub OAuth sign-up for Appsmith and the publishing steps.
 
