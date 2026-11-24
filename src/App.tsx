@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapPin } from 'lucide-react';
 import { ROOMS, INITIAL_BOOKINGS } from './data';
 import { Booking, Room } from './types';
@@ -6,6 +6,7 @@ import { checkAvailability, AvailabilityResult } from './availability';
 import { filterRooms } from './filters';
 import { AvailabilityForm } from './components/AvailabilityForm';
 import { RoomCatalog } from './components/RoomCatalog';
+import ContractChecker from './components/ContractChecker';
 
 const ALL_EQUIPMENT = Array.from(
   new Set(ROOMS.flatMap((r) => r.equipment))
@@ -18,6 +19,12 @@ function parseAttendees(value: string): number {
   return n;
 }
 
+type Tab = 'finder' | 'contract';
+
+function tabFromHash(): Tab {
+  return window.location.hash === '#contract' ? 'contract' : 'finder';
+}
+
 function App() {
   const [bookings] = useState<Booking[]>(INITIAL_BOOKINGS);
   const [selectedRoomId, setSelectedRoomId] = useState('');
@@ -27,6 +34,18 @@ function App() {
   const [requiredEquipment, setRequiredEquipment] = useState<string[]>([]);
   const [currentTime] = useState(540); // 09:00 as fictional "now"
   const [result, setResult] = useState<AvailabilityResult | null>(null);
+  const [tab, setTab] = useState<Tab>(tabFromHash);
+
+  useEffect(() => {
+    const onHashChange = () => setTab(tabFromHash());
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  function switchTab(next: Tab) {
+    setTab(next);
+    window.location.hash = next === 'contract' ? 'contract' : '';
+  }
 
   const attendees = parseAttendees(attendeesStr);
   const attendeesInvalid = attendees === -1;
@@ -107,7 +126,43 @@ function App() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div
+          role="tablist"
+          aria-label="Availability views"
+          className="flex gap-2 mb-6"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'finder'}
+            onClick={() => switchTab('finder')}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              tab === 'finder'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'bg-white border border-slate-300 text-slate-600 hover:border-teal-400 hover:text-teal-700'
+            }`}
+          >
+            Room finder
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'contract'}
+            onClick={() => switchTab('contract')}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              tab === 'contract'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'bg-white border border-slate-300 text-slate-600 hover:border-teal-400 hover:text-teal-700'
+            }`}
+          >
+            Single-room checker
+          </button>
+        </div>
+
+        {tab === 'contract' ? (
+          <ContractChecker />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <AvailabilityForm
             attendeesStr={attendeesStr}
             attendeesInvalid={attendeesInvalid}
@@ -134,7 +189,8 @@ function App() {
             requiredEquipment={requiredEquipment}
             onSelectRoom={selectRoom}
           />
-        </div>
+          </div>
+        )}
       </main>
 
       <footer className="max-w-5xl mx-auto px-4 sm:px-6 py-6 text-center">
